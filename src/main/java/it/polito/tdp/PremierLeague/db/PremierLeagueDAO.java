@@ -5,11 +5,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
 import it.polito.tdp.PremierLeague.model.Action;
+import it.polito.tdp.PremierLeague.model.Arco;
 import it.polito.tdp.PremierLeague.model.Match;
 import it.polito.tdp.PremierLeague.model.Player;
 import it.polito.tdp.PremierLeague.model.Team;
+
 
 public class PremierLeagueDAO {
 	
@@ -36,25 +44,28 @@ public class PremierLeagueDAO {
 		}
 	}
 	
-	public List<Team> listAllTeams(){
+	public /*List<Team>*/void listAllTeams(Map<Integer,Team> map){
 		String sql = "SELECT * FROM Teams";
-		List<Team> result = new ArrayList<Team>();
+//		List<Team> result = new ArrayList<Team>();
 		Connection conn = DBConnect.getConnection();
 
 		try {
 			PreparedStatement st = conn.prepareStatement(sql);
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
+				if(!map.containsKey(res.getInt("TeamID"))) {
 
 				Team team = new Team(res.getInt("TeamID"), res.getString("Name"));
-				result.add(team);
+//				result.add(team);
+				map.put(res.getInt("TeamID"), team);
+				}
 			}
 			conn.close();
-			return result;
+//			return result;
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
+//			return null;
 		}
 	}
 	
@@ -102,6 +113,36 @@ public class PremierLeagueDAO {
 				
 				result.add(match);
 
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public List<Arco> getArchi(Map<Integer,Team> map){
+		String sql = "SELECT t1.TeamID AS id1, t1.Name AS nome1, t2.TeamID AS id2, t2.Name AS nome2, (SUM(m.TeamHomeID) - SUM(m.TeamAwayID)) AS peso "
+				+ "FROM teams t1, teams t2, matches m "
+				+ "WHERE t1.TeamID = m.TeamHomeID AND t2.TeamID = m.TeamAwayID AND t1.TeamID <> t2.TeamID AND t1.TeamID > t2.TeamID "
+				+ "GROUP BY t1.TeamID , t1.Name , t2.TeamID , t2.Name";
+		List<Arco> result = new LinkedList<Arco>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				Team t1 = map.get(res.getInt("id1"));
+				Team t2 = map.get(res.getInt("id2"));
+				if( t1 != null && t2 != null) {
+					Arco arco = new Arco(t1,t2,res.getInt("peso"));
+					result.add(arco);
+				}
+	
 			}
 			conn.close();
 			return result;
