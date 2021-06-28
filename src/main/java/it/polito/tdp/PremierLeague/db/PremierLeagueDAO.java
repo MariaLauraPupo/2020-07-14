@@ -122,35 +122,64 @@ public class PremierLeagueDAO {
 			return null;
 		}
 	}
-	
-	public List<Arco> getArchi(Map<Integer,Team> map){
-		String sql = "SELECT t1.TeamID AS id1, t1.Name AS nome1, t2.TeamID AS id2, t2.Name AS nome2, (SUM(m.TeamHomeID) - SUM(m.TeamAwayID)) AS peso "
-				+ "FROM teams t1, teams t2, matches m "
-				+ "WHERE t1.TeamID = m.TeamHomeID AND t2.TeamID = m.TeamAwayID AND t1.TeamID <> t2.TeamID AND t1.TeamID > t2.TeamID "
-				+ "GROUP BY t1.TeamID , t1.Name , t2.TeamID , t2.Name";
-		List<Arco> result = new LinkedList<Arco>();
+	public void setVittorie(Team team){
+		String sql = "SELECT t.TeamID, COUNT(*) AS punteggio "
+				+ "FROM matches m, teams t "
+				+ "WHERE (m.TeamHomeID = ? AND m.ResultOfTeamHome = '1' AND t.TeamID = m.TeamHomeID) OR (m.TeamAwayID = ? AND m.ResultOfTeamHome = '-1' AND t.TeamID = m.TeamAwayID) "
+				+ "GROUP BY t.TeamID";
+		
 		Connection conn = DBConnect.getConnection();
 
 		try {
 			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, team.getTeamID());
+			st.setInt(2,team.getTeamID());
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
+				
+				team.setPunteggio(3*res.getInt("punteggio"));
+				
 
-				Team t1 = map.get(res.getInt("id1"));
-				Team t2 = map.get(res.getInt("id2"));
-				if( t1 != null && t2 != null) {
-					Arco arco = new Arco(t1,t2,res.getInt("peso"));
-					result.add(arco);
-				}
-	
 			}
 			conn.close();
-			return result;
+			
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
+			
 		}
 	}
+	
+	public void setPareggi(Team team) {
+		String sql = "SELECT t.TeamID, COUNT(*) AS punteggio "
+				+ "FROM matches m, teams t "
+				+ "WHERE (m.TeamHomeID = ? AND m.ResultOfTeamHome = '0' AND t.TeamID = m.TeamHomeID) OR (m.TeamAwayID = ? AND m.ResultOfTeamHome = '0' AND t.TeamID = m.TeamAwayID) "
+				+ "GROUP BY t.TeamID";
+		
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, team.getTeamID());
+			st.setInt(2,team.getTeamID());
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				
+				team.setPunteggio(1*res.getInt("punteggio"));
+				
+
+			}
+			conn.close();
+			
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			
+		}
+		
+	}
+	
+	
+	
 	
 }

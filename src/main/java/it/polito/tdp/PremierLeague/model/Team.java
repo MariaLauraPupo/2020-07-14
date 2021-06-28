@@ -30,7 +30,7 @@ public class Team {
 	}
 
 	public void setPunteggio(int punteggio) {
-		this.punteggio = punteggio;
+		this.punteggio += punteggio;
 	}
 
 	@Override

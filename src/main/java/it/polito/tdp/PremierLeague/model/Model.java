@@ -7,12 +7,13 @@ import java.util.Map;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 
 import it.polito.tdp.PremierLeague.db.PremierLeagueDAO;
 
 public class Model {
 	
-	private SimpleDirectedGraph<Team,DefaultWeightedEdge> grafo;
+	private SimpleDirectedWeightedGraph<Team,DefaultWeightedEdge> grafo;
 	private PremierLeagueDAO dao;
 	private Map<Integer,Team> idMap;
 	
@@ -22,22 +23,28 @@ public class Model {
 		dao.listAllTeams(idMap);
 	}
 	public void creaGrafo(){
-		grafo = new SimpleDirectedGraph<Team,DefaultWeightedEdge>(DefaultWeightedEdge.class);
+		grafo = new SimpleDirectedWeightedGraph<Team,DefaultWeightedEdge>(DefaultWeightedEdge.class);
 		//vertici
 		Graphs.addAllVertices(grafo, idMap.values());
+		for(Team t : this.grafo.vertexSet()) {
+			dao.setVittorie(t);
+			dao.setPareggi(t);
+		}
 		//archi
-		for(Arco a : dao.getArchi(idMap)) {
-			if(grafo.containsVertex(a.getT1()) &&  grafo.containsVertex(a.getT2())) {
-				DefaultWeightedEdge e = this.grafo.addEdge(a.getT1(), a.getT2());
-				if(e==null) {
-					if(a.getPeso()<0) {
-						Graphs.addEdgeWithVertices(grafo, a.getT2(), a.getT1(), ((double) -1)*a.getPeso());
-					}else if(a.getPeso()>0) {
-						Graphs.addEdgeWithVertices(grafo, a.getT1(), a.getT2(), a.getPeso());
-					}
+		for(Team t1: this.grafo.vertexSet()) {
+			for(Team t2 : this.grafo.vertexSet()) {
+				if(t1.getTeamID() != t2.getTeamID()) {
+				if(t1.getPunteggio() > t2.getPunteggio()) {
+					Graphs.addEdgeWithVertices(grafo, t1, t2, t1.getPunteggio() - t2.getPunteggio());
+				}else if(t2.getPunteggio() > t1.getPunteggio()) {
+					Graphs.addEdgeWithVertices(grafo, t2, t1, t2.getPunteggio() - t1.getPunteggio());
+
 				}
+				
+			}
 			}
 		}
+		
 		System.out.println("vertici " + grafo.vertexSet().size());
 		System.out.println("archi " + grafo.edgeSet().size());
 
